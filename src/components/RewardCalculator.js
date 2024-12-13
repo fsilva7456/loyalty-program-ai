@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 const RewardCalculator = ({ industry }) => {
   const [spending, setSpending] = useState(100);
@@ -21,19 +20,19 @@ const RewardCalculator = ({ industry }) => {
     return [
       {
         tier: 'Basic',
-        points: basePoints * industryMultiplier,
+        points: Math.round(basePoints * industryMultiplier),
         savings: (basePoints * industryMultiplier * 0.01).toFixed(2),
         perks: 2
       },
       {
         tier: 'Silver',
-        points: basePoints * industryMultiplier * 1.25,
+        points: Math.round(basePoints * industryMultiplier * 1.25),
         savings: (basePoints * industryMultiplier * 0.015).toFixed(2),
         perks: 4
       },
       {
         tier: 'Gold',
-        points: basePoints * industryMultiplier * 1.5,
+        points: Math.round(basePoints * industryMultiplier * 1.5),
         savings: (basePoints * industryMultiplier * 0.02).toFixed(2),
         perks: 6
       }
@@ -84,37 +83,48 @@ const RewardCalculator = ({ industry }) => {
         </div>
       </div>
 
-      <div className="mb-6">
-        <h4 className="text-lg font-semibold mb-2">Projected Rewards</h4>
-        <div className="w-full h-64">
-          <BarChart
-            width={600}
-            height={300}
-            data={rewardData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="tier" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="points" fill="#8884d8" name="Points" />
-            <Bar dataKey="savings" fill="#82ca9d" name="Savings ($)" />
-          </BarChart>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {rewardData.map((tier) => (
-          <div key={tier.tier} className="p-4 border rounded-lg">
-            <h5 className="font-bold">{tier.tier}</h5>
-            <div className="text-sm">
-              <p>Points: {Math.round(tier.points)}</p>
-              <p>Savings: ${tier.savings}</p>
-              <p>Perks: {tier.perks}</p>
+          <div key={tier.tier} className="p-4 border rounded-lg bg-gradient-to-b from-white to-gray-50">
+            <div className="flex justify-between items-center mb-2">
+              <h5 className="font-bold text-lg">{tier.tier}</h5>
+              <span className="text-sm text-gray-500">{tier.perks} perks</span>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Points:</span>
+                <span className="font-medium">{tier.points.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Savings:</span>
+                <span className="font-medium text-green-600">${tier.savings}</span>
+              </div>
+              <div className="relative pt-2">
+                <div className="w-full h-2 bg-gray-200 rounded">
+                  <div 
+                    className="h-2 bg-blue-600 rounded" 
+                    style={{ 
+                      width: `${(tier.points / (rewardData[2].points)) * 100}%`,
+                      transition: 'width 0.3s ease-in-out'
+                    }}
+                  ></div>
+                </div>
+              </div>
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+        <h4 className="font-semibold mb-2">Projected Annual Value</h4>
+        <div className="text-sm text-gray-600">
+          <p>Based on your spending patterns and {industry} industry multiplier:</p>
+          <ul className="list-disc list-inside mt-2 space-y-1">
+            <li>Total Points: {Math.round(rewardData[2].points * (timeframe === 'month' ? 12 : 1)).toLocaleString()}</li>
+            <li>Maximum Savings: ${(parseFloat(rewardData[2].savings) * (timeframe === 'month' ? 12 : 1)).toFixed(2)}</li>
+            <li>Available Perks: {rewardData[2].perks}</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

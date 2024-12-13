@@ -1,4 +1,4 @@
-export const generatePrompts = (businessName, industry, options = {}) => {
+export const generatePrompts = (businessName, industry) => {
   const competitorPrompt = `You are a market research expert specializing in ${industry} loyalty programs. For ${businessName}, provide a detailed competitor analysis focused on their industry. Include:
 
 1. Key Competitor Programs

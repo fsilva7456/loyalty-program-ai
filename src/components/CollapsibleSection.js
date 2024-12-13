@@ -4,19 +4,20 @@ const CollapsibleSection = ({ title, children, defaultExpanded = false }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="collapsible-section">
-      <div 
-        className="section-header"
+    <div className="mb-6">
+      <button
         onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-t-lg"
       >
-        <h2>{title}</h2>
-        <span className="toggle-icon">
-          {isExpanded ? '−' : '+'}
-        </span>
-      </div>
-      <div className={`section-content ${isExpanded ? '' : 'collapsed'}`}>
-        {children}
-      </div>
+        <h2 className="text-xl font-semibold">{title}</h2>
+        <span className="text-xl">{isExpanded ? '−' : '+'}</span>
+      </button>
+      
+      {isExpanded && (
+        <div className="border-t border-gray-200">
+          {children}
+        </div>
+      )}
     </div>
   );
 };

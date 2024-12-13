@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import OpenAI from 'openai';
+import ProgressSteps from './components/ProgressSteps';
+import CollapsibleSection from './components/CollapsibleSection';
+import { generatePrompts } from './utils/prompts';
+import './styles/components.css';
 
 function App() {
   const [businessName, setBusinessName] = useState('');
+  const [industry, setIndustry] = useState('retail');
+  const [currentStep, setCurrentStep] = useState(0);
   const [generatedProgram, setGeneratedProgram] = useState('');
   const [competitorAnalysis, setCompetitorAnalysis] = useState('');
   const [businessCase, setBusinessCase] = useState('');
@@ -18,6 +24,7 @@ function App() {
     setCompetitorAnalysis('');
     setGeneratedProgram('');
     setBusinessCase('');
+    setCurrentStep(1);
 
     try {
       const openai = new OpenAI({
@@ -25,65 +32,42 @@ function App() {
         dangerouslyAllowBrowser: true
       });
 
-      // Get competitor analysis first
-      const competitorPrompt = `You are a market research expert. For a business named ${businessName}, provide a detailed competitor analysis of loyalty programs in their industry. Include:
-      1. Key Competitor Programs - Analyze existing loyalty programs and their effectiveness
-      2. Market Gaps - Identify underserved areas and opportunities
-      3. Best Practices - List what works well in the industry
-      4. Differentiation Strategy - Recommend how ${businessName} can stand out
+      const prompts = generatePrompts(businessName, industry);
 
-      Be specific and provide real examples where possible.`;
-
+      // Get competitor analysis
+      setCurrentStep(1);
       const competitorResponse = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: competitorPrompt }],
+        messages: [{ role: "user", content: prompts.competitorPrompt }],
         temperature: 0.7,
       });
 
       setCompetitorAnalysis(competitorResponse.choices[0].message.content);
 
-      // Generate behavioral science-based program design
-      const programPrompt = `You are a loyalty program design expert with deep knowledge of behavioral science. Based on this competitor analysis:
-      ${competitorResponse.choices[0].message.content}
-
-      Create a detailed loyalty program proposal for ${businessName}. Include:
-      1. Program Overview - Key features and unique selling points
-      2. Behavioral Science Foundation - Explain which behavioral principles the program leverages (e.g., loss aversion, goal gradient effect, endowed progress effect) and how
-      3. Reward Structure - Point system, tiers, and benefits, explaining the psychological mechanisms behind each element
-      4. Implementation Plan - Timeline and key steps
-      5. Customer Journey Design - How the program creates habit loops and engagement
-
-      For each element, explicitly connect design choices to behavioral science principles.`;
-
+      // Generate program design
+      setCurrentStep(2);
       const programResponse = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: programPrompt }],
+        messages: [{ 
+          role: "user", 
+          content: prompts.programPrompt(competitorResponse.choices[0].message.content) 
+        }],
         temperature: 0.7,
       });
 
       setGeneratedProgram(programResponse.choices[0].message.content);
 
       // Generate business case
-      const businessCasePrompt = `You are a business strategy consultant. Based on this competitor analysis and program design:
-      
-Competitor Analysis:
-${competitorResponse.choices[0].message.content}
-
-Program Design:
-${programResponse.choices[0].message.content}
-
-Create a comprehensive business case for implementing this loyalty program. Include:
-      1. Market Opportunity - Size of prize and market potential
-      2. Financial Projections - Expected costs, revenue impact, and ROI
-      3. Customer Impact - Projected changes in key metrics (retention, frequency, basket size)
-      4. Risk Analysis - Key risks and mitigation strategies
-      5. Success Metrics - KPIs to track and target benchmarks
-
-      Be specific with numbers and assumptions where possible.`;
-
+      setCurrentStep(3);
       const businessCaseResponse = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: businessCasePrompt }],
+        messages: [{ 
+          role: "user", 
+          content: prompts.businessCasePrompt(
+            competitorResponse.choices[0].message.content,
+            programResponse.choices[0].message.content
+          ) 
+        }],
         temperature: 0.7,
       });
 
@@ -109,13 +93,13 @@ Create a comprehensive business case for implementing this loyalty program. Incl
 
   const formatProgramOutput = (text) => {
     if (!text) return null;
-    const sections = text.split(/\d\.\s/);
+    const sections = text.split(/\\d\\.\\s/);
     return sections.map((section, index) => {
       if (index === 0) return null;
       return (
         <div key={index} className="program-section">
-          <h3>{section.split('\n')[0]}</h3>
-          <p>{section.split('\n').slice(1).join('\n')}</p>
+          <h3>{section.split('\\n')[0]}</h3>
+          <p>{section.split('\\n').slice(1).join('\\n')}</p>
         </div>
       );
     });
@@ -125,10 +109,12 @@ Create a comprehensive business case for implementing this loyalty program. Incl
     <div className="container">
       <header>
         <h1>AI Loyalty Program Designer</h1>
-        <p>Enter your business name to generate a loyalty program with competitive analysis and business case</p>
+        <p>Enter your business details to generate a comprehensive loyalty program</p>
       </header>
 
-      <form onSubmit={handleSubmit}>
+      {currentStep > 0 && <ProgressSteps currentStep={currentStep} />}
+
+      <form onSubmit={handleSubmit} className="input-form">
         <div className="input-group">
           <label>Business Name:</label>
           <input
@@ -139,12 +125,26 @@ Create a comprehensive business case for implementing this loyalty program. Incl
             placeholder="Enter your business name"
           />
         </div>
+        <div className="input-group">
+          <label>Industry:</label>
+          <select
+            value={industry}
+            onChange={(e) => setIndustry(e.target.value)}
+            required
+          >
+            <option value="retail">Retail</option>
+            <option value="restaurant">Restaurant</option>
+            <option value="services">Professional Services</option>
+            <option value="ecommerce">E-commerce</option>
+            <option value="wellness">Health & Wellness</option>
+          </select>
+        </div>
         <button type="submit" disabled={isLoading} className="submit-button">
           {isLoading ? (
-            <>
-              <div className="spinner"></div>
-              <span>Generating comprehensive analysis...</span>
-            </>
+            <div className="loading-state">
+              <div className="loading-spinner"></div>
+              <span>Generating your program...</span>
+            </div>
           ) : (
             'Generate Program'
           )}
@@ -158,54 +158,66 @@ Create a comprehensive business case for implementing this loyalty program. Incl
       )}
 
       {competitorAnalysis && (
-        <div className="output competitor-analysis">
-          <div className="output-header">
-            <h2>Competitive Analysis</h2>
-            <button 
-              onClick={() => handleCopy(competitorAnalysis)} 
-              className={`copy-button ${copySuccess ? 'success' : ''}`}
-            >
-              {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
-            </button>
+        <CollapsibleSection 
+          title="Competitive Analysis" 
+          defaultExpanded={true}
+        >
+          <div className="output competitor-analysis">
+            <div className="output-header">
+              <button 
+                onClick={() => handleCopy(competitorAnalysis)} 
+                className={`copy-button ${copySuccess ? 'success' : ''}`}
+              >
+                {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
+              </button>
+            </div>
+            <div className="program-content">
+              {formatProgramOutput(competitorAnalysis)}
+            </div>
           </div>
-          <div className="program-content">
-            {formatProgramOutput(competitorAnalysis)}
-          </div>
-        </div>
+        </CollapsibleSection>
       )}
 
       {generatedProgram && (
-        <div className="output program-design">
-          <div className="output-header">
-            <h2>Program Design & Behavioral Science</h2>
-            <button 
-              onClick={() => handleCopy(generatedProgram)} 
-              className={`copy-button ${copySuccess ? 'success' : ''}`}
-            >
-              {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
-            </button>
+        <CollapsibleSection 
+          title="Program Design & Behavioral Science" 
+          defaultExpanded={currentStep === 2}
+        >
+          <div className="output program-design">
+            <div className="output-header">
+              <button 
+                onClick={() => handleCopy(generatedProgram)} 
+                className={`copy-button ${copySuccess ? 'success' : ''}`}
+              >
+                {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
+              </button>
+            </div>
+            <div className="program-content">
+              {formatProgramOutput(generatedProgram)}
+            </div>
           </div>
-          <div className="program-content">
-            {formatProgramOutput(generatedProgram)}
-          </div>
-        </div>
+        </CollapsibleSection>
       )}
 
       {businessCase && (
-        <div className="output business-case">
-          <div className="output-header">
-            <h2>Business Case</h2>
-            <button 
-              onClick={() => handleCopy(businessCase)} 
-              className={`copy-button ${copySuccess ? 'success' : ''}`}
-            >
-              {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
-            </button>
+        <CollapsibleSection 
+          title="Business Case" 
+          defaultExpanded={currentStep === 3}
+        >
+          <div className="output business-case">
+            <div className="output-header">
+              <button 
+                onClick={() => handleCopy(businessCase)} 
+                className={`copy-button ${copySuccess ? 'success' : ''}`}
+              >
+                {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
+              </button>
+            </div>
+            <div className="program-content">
+              {formatProgramOutput(businessCase)}
+            </div>
           </div>
-          <div className="program-content">
-            {formatProgramOutput(businessCase)}
-          </div>
-        </div>
+        </CollapsibleSection>
       )}
     </div>
   );

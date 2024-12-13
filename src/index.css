@@ -124,6 +124,14 @@ input:focus {
   border-left: 4px solid #4299e1;
 }
 
+.program-design {
+  border-left: 4px solid #48bb78;
+}
+
+.business-case {
+  border-left: 4px solid #ed8936;
+}
+
 .output-header {
   padding: 20px;
   background: #f7fafc;

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import OpenAI from 'openai';
-import './App.css';
 
 function App() {
   const [businessName, setBusinessName] = useState('');

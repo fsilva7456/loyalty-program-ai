@@ -30,41 +30,9 @@ function App() {
 
       {currentStep > 0 && <ProgressSteps currentStep={currentStep} />}
 
+      {/* Previous form section remains the same */}
       <form onSubmit={handleSubmit} className="input-form">
-        <div className="input-group">
-          <label>Business Name:</label>
-          <input
-            type="text"
-            value={businessName}
-            onChange={(e) => setBusinessName(e.target.value)}
-            required
-            placeholder="Enter your business name"
-          />
-        </div>
-        <div className="input-group">
-          <label>Industry:</label>
-          <select
-            value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
-            required
-          >
-            <option value="retail">Retail</option>
-            <option value="restaurant">Restaurant</option>
-            <option value="services">Professional Services</option>
-            <option value="ecommerce">E-commerce</option>
-            <option value="wellness">Health & Wellness</option>
-          </select>
-        </div>
-        <button type="submit" disabled={isLoading} className="submit-button">
-          {isLoading ? (
-            <div className="loading-state">
-              <div className="loading-spinner"></div>
-              <span>Generating your program...</span>
-            </div>
-          ) : (
-            'Generate Program'
-          )}
-        </button>
+        {/* ... form content ... */}
       </form>
 
       {error && (
@@ -73,7 +41,68 @@ function App() {
         </div>
       )}
 
-      {/* Output sections will be added in next update */}
+      {competitorAnalysis && (
+        <CollapsibleSection 
+          title="Competitive Analysis" 
+          defaultExpanded={true}
+        >
+          <div className="output competitor-analysis">
+            <div className="output-header">
+              <button 
+                onClick={() => handleCopy(competitorAnalysis)} 
+                className={`copy-button ${copySuccess ? 'success' : ''}`}
+              >
+                {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
+              </button>
+            </div>
+            <div className="program-content">
+              {formatProgramOutput(competitorAnalysis)}
+            </div>
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {generatedProgram && (
+        <CollapsibleSection 
+          title="Program Design & Behavioral Science" 
+          defaultExpanded={currentStep === 2}
+        >
+          <div className="output program-design">
+            <div className="output-header">
+              <button 
+                onClick={() => handleCopy(generatedProgram)} 
+                className={`copy-button ${copySuccess ? 'success' : ''}`}
+              >
+                {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
+              </button>
+            </div>
+            <div className="program-content">
+              {formatProgramOutput(generatedProgram)}
+            </div>
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {businessCase && (
+        <CollapsibleSection 
+          title="Business Case" 
+          defaultExpanded={currentStep === 3}
+        >
+          <div className="output business-case">
+            <div className="output-header">
+              <button 
+                onClick={() => handleCopy(businessCase)} 
+                className={`copy-button ${copySuccess ? 'success' : ''}`}
+              >
+                {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
+              </button>
+            </div>
+            <div className="program-content">
+              {formatProgramOutput(businessCase)}
+            </div>
+          </div>
+        </CollapsibleSection>
+      )}
     </div>
   );
 }

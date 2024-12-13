@@ -9,40 +9,28 @@ function App() {
   const [error, setError] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
 
-  const searchCompetitors = async (businessName) => {
-    const searchQuery = `${businessName} competitors loyalty program rewards`;
-    const searchResponse = await fetch('/api/brave-web-search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: searchQuery, count: 5 })
-    });
-
-    const searchData = await searchResponse.json();
-    return searchData;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
     setCopySuccess(false);
+    setCompetitorAnalysis('');
+    setGeneratedProgram('');
 
     try {
-      // First, search for competitor information
-      const competitorData = await searchCompetitors(businessName);
-      
       const openai = new OpenAI({
         apiKey: process.env.REACT_APP_OPENAI_API_KEY,
         dangerouslyAllowBrowser: true
       });
 
-      // Analyze competitor data first
-      const competitorPrompt = `Based on this search data about competitors: ${JSON.stringify(competitorData)},
-      provide a competitive analysis for ${businessName}'s loyalty program. Include:
-      1. Key Competitor Programs
-      2. Market Gaps and Opportunities
-      3. Competitive Advantages to Target
-      4. Recommendations for Differentiation`;
+      // Get competitor analysis first
+      const competitorPrompt = `You are a market research expert. For a business named ${businessName}, provide a detailed competitor analysis of loyalty programs in their industry. Include:
+      1. Key Competitor Programs - Analyze existing loyalty programs in the industry
+      2. Market Gaps - Identify underserved areas and opportunities
+      3. Best Practices - List what works well in the industry
+      4. Differentiation Strategy - Recommend how ${businessName} can stand out
+
+      Be specific and provide real examples where possible.`;
 
       const competitorResponse = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
@@ -52,14 +40,18 @@ function App() {
 
       setCompetitorAnalysis(competitorResponse.choices[0].message.content);
 
-      // Then generate the loyalty program incorporating competitive insights
-      const programPrompt = `Create a detailed loyalty program proposal for ${businessName}, incorporating our competitive analysis. Format the response with these sections:
-      1. Program Overview
-      2. Reward Structure
-      3. Implementation Plan
-      4. Cost Considerations
-      5. Success Metrics
-      Make sure to highlight competitive advantages and unique features that will help the business stand out.`;
+      // Then generate the loyalty program based on the analysis
+      const programPrompt = `You are a loyalty program design expert. Based on this competitor analysis:
+      ${competitorResponse.choices[0].message.content}
+
+      Create a detailed loyalty program proposal for ${businessName}. Include:
+      1. Program Overview - Key features and unique selling points
+      2. Reward Structure - Point system, tiers, and benefits
+      3. Implementation Plan - Timeline and key steps
+      4. Cost Considerations - Expected investment and ROI
+      5. Success Metrics - KPIs to track
+
+      Make it practical and focused on competitive advantages.`;
 
       const programResponse = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
@@ -70,7 +62,7 @@ function App() {
       setGeneratedProgram(programResponse.choices[0].message.content);
     } catch (error) {
       console.error('Error:', error);
-      setError('Failed to generate program. Please check your API key and try again.');
+      setError('Error: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -122,7 +114,7 @@ function App() {
           {isLoading ? (
             <>
               <div className="spinner"></div>
-              <span>Analyzing competitors & generating program...</span>
+              <span>Analyzing market & generating program...</span>
             </>
           ) : (
             'Generate Program'
